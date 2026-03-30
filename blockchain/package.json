@@ -1,0 +1,16 @@
+{
+  "name": "carbon-credit-blockchain",
+  "version": "1.0.0",
+  "description": "Solidity smart contracts for Carbon Credit Platform",
+  "scripts": {
+    "compile": "truffle compile",
+    "migrate": "truffle migrate --network development",
+    "migrate:reset": "truffle migrate --reset --network development",
+    "test": "truffle test",
+    "console": "truffle console --network development"
+  },
+  "dependencies": {
+    "truffle": "^5.11.5",
+    "@openzeppelin/contracts": "^4.9.3"
+  }
+}
