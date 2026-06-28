@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../../components/shared/Layout';
 import { governmentAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import { CheckCircle, XCircle, Building2, Search } from 'lucide-react';
+import { Building2, Search } from 'lucide-react';
 
 export default function ManageCompanies() {
   const qc = useQueryClient();
@@ -11,9 +11,9 @@ export default function ManageCompanies() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ status: 'approved', emission_limit: '', notes: '' });
 
-  const { data: dashData } = useQuery({
-    queryKey: ['gov-dashboard'],
-    queryFn: () => governmentAPI.getDashboard().then(r => r.data),
+  const { data: companiesData, isLoading } = useQuery({
+    queryKey: ['gov-companies', search],
+    queryFn: () => governmentAPI.getCompanies(search ? { search } : {}).then(r => r.data),
   });
 
   const kybMutation = useMutation({
@@ -21,20 +21,13 @@ export default function ManageCompanies() {
     onSuccess: () => {
       toast.success('Company status updated!');
       qc.invalidateQueries(['gov-dashboard']);
+      qc.invalidateQueries(['gov-companies']);
       setModal(null);
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Update failed'),
   });
 
-  const limitMutation = useMutation({
-    mutationFn: ({ id, data }) => governmentAPI.setEmissionLimit(id, data),
-    onSuccess: () => { toast.success('Emission limit set!'); setModal(null); },
-    onError: () => toast.error('Failed to set limit'),
-  });
-
-  const allCompanies = [
-    ...(dashData?.pending_companies || []),
-  ];
+  const allCompanies = companiesData?.results ?? companiesData ?? [];
 
   const statusStyle = {
     approved: 'bg-emerald-500/20 text-emerald-400',
@@ -59,10 +52,14 @@ export default function ManageCompanies() {
         </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          {allCompanies.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+            </div>
+          ) : allCompanies.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <Building2 size={32} className="mx-auto mb-3 opacity-30" />
-              <p>No pending companies</p>
+              <p>No companies found</p>
             </div>
           ) : (
             <table className="w-full">

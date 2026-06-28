@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.GovernmentDashboardView.as_view(), name='gov-dashboard'),
+    path('companies/', views.GovernmentCompaniesListView.as_view(), name='gov-companies'),
     path('submissions/', views.PendingSubmissionsView.as_view(), name='gov-submissions'),
     path('submissions/<uuid:submission_id>/review/', views.ReviewSubmissionView.as_view(), name='gov-review'),
     path('companies/<uuid:company_id>/kyb/', views.CompanyKYBReviewView.as_view(), name='gov-kyb'),

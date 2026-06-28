@@ -43,6 +43,21 @@ class GovernmentDashboardView(APIView):
         })
 
 
+class GovernmentCompaniesListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsGovernmentUser]
+    serializer_class = CompanySerializer
+
+    def get_queryset(self):
+        qs = Company.objects.all().order_by('-created_at')
+        status = self.request.query_params.get('status')
+        search = self.request.query_params.get('search', '').strip()
+        if status:
+            qs = qs.filter(status=status)
+        if search:
+            qs = qs.filter(name__icontains=search)
+        return qs
+
+
 class PendingSubmissionsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsGovernmentUser]
     serializer_class = EmissionSubmissionSerializer

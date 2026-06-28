@@ -105,17 +105,22 @@ class EmissionSubmissionCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
 
-        # ✅ SAFE CHECK (prevents crash)
-        if not hasattr(user, 'company'):
+        try:
+            company = user.company
+        except Exception:
             raise serializers.ValidationError("User is not associated with any company.")
 
         submission = EmissionSubmission.objects.create(
-            company=user.company,
+            company=company,
             **validated_data
         )
 
-        # ✅ Trigger Celery AI task
+        from django.conf import settings
         from apps.ai_engine.tasks import verify_emission_submission
-        verify_emission_submission.delay(submission.id)
+
+        if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+            verify_emission_submission(submission.id)
+        else:
+            verify_emission_submission.delay(submission.id)
 
         return submission

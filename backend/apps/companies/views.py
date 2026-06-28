@@ -31,14 +31,7 @@ class CompanyRegistrationView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        company = serializer.save(user=self.request.user)
-
-        # Auto approve (you can change later)
-        company.status = 'approved'
-        company.permitted_emission_limit = 1000000
-        company.daily_trading_limit = 10000
-        company.credit_balance = 100
-        company.save()
+        serializer.save()
 
 
 # -------------------- EMISSION SUBMISSION --------------------
@@ -57,33 +50,19 @@ class EmissionSubmissionViewSet(viewsets.ModelViewSet):
         ).order_by('-created_at')
 
     def perform_create(self, serializer):
-        company = self.request.user.company
+        serializer.save()
 
-        submission = serializer.save(company=company)
-
-        # Trigger AI verification (async)
-        try:
-            from apps.ai_engine.tasks import verify_emission_submission
-            verify_emission_submission.delay(submission.id)
-        except Exception as e:
-            print("AI task error:", e)
-
-    # -------------------- STATS --------------------
-
-    @action(detail=False, methods=['get'])
-    def stats(self, request):
+    @action(detail=False, methods=['get'], url_path='dashboard')
+    def dashboard(self, request):
         company = request.user.company
         subs = self.get_queryset()
-
         approved = subs.filter(status='approved')
 
         return Response({
-            "company": company.name,
-            "total_submissions": subs.count(),
-            "approved_count": approved.count(),
-            "total_credits": sum(s.assigned_credits or 0 for s in approved),
-            "balance": company.credit_balance,
-            "recent": EmissionSubmissionSerializer(subs[:3], many=True).data
+            'company': CompanySerializer(company).data,
+            'total_submissions': subs.count(),
+            'approved_submissions': approved.count(),
+            'recent_submissions': EmissionSubmissionSerializer(subs[:5], many=True).data,
         })
 
 

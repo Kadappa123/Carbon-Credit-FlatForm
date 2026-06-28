@@ -74,6 +74,7 @@ export const tradingAPI = {
 // ── Government ─────────────────────────────────────────────────────────────────
 export const governmentAPI = {
   getDashboard: () => api.get('/government/dashboard/'),
+  getCompanies: (params) => api.get('/government/companies/', { params }),
   getSubmissions: (params) => api.get('/government/submissions/', { params }),
   reviewSubmission: (id, data) => api.post(`/government/submissions/${id}/review/`, data),
   reviewKYB: (id, data) => api.post(`/government/companies/${id}/kyb/`, data),

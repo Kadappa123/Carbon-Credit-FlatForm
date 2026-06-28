@@ -26,7 +26,9 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       const refresh = localStorage.getItem('refresh_token');
-      await authAPI.logout(refresh);
+      if (refresh) await authAPI.logout(refresh);
+    } catch {
+      // Clear local session even if the backend is unreachable
     } finally {
       localStorage.clear();
       set({ user: null, isAuthenticated: false });

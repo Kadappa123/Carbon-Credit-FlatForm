@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import Layout from '../../components/shared/Layout';
 import { companiesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -33,6 +34,7 @@ function Field({ label, name, value, onChange, type = 'number', unit, icon: Icon
 
 export default function SubmitEmission() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     submission_year: new Date().getFullYear(),
@@ -58,6 +60,7 @@ export default function SubmitEmission() {
       Object.entries(form).forEach(([k, v]) => v !== '' && fd.append(k, v));
       if (file) fd.append('document', file);
       await companiesAPI.submitEmission(fd);
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       toast.success('Emission report submitted! AI verification in progress...');
       navigate('/company');
     } catch (err) {
