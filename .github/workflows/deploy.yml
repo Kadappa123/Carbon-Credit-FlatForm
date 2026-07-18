@@ -1,0 +1,85 @@
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows:
+      - Continuous Integration
+    types:
+      - completed
+
+jobs:
+  deploy:
+    name: Deploy Application
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+          script: |
+            echo "==================================="
+            echo "🚀 Starting Deployment"
+            echo "==================================="
+
+            cd /home/ubuntu/Carbon-Credit-FlatForm
+
+            echo "Current Branch"
+            git branch
+
+            echo "Fetching Latest Code..."
+            git fetch origin
+
+            git checkout main
+
+            git reset --hard origin/main
+
+            echo "Stopping Containers..."
+            docker compose down --remove-orphans
+
+            echo "Removing Old Images..."
+            docker image prune -af
+
+            echo "Building New Images..."
+            docker compose build --no-cache
+
+            echo "Starting Containers..."
+            docker compose up -d
+
+            echo "Waiting for Containers..."
+            sleep 30
+
+            echo "Container Status"
+            docker compose ps
+
+            echo "Running Django Migrations..."
+            docker compose exec -T backend python manage.py migrate
+
+            echo "Collecting Static Files..."
+            docker compose exec -T backend python manage.py collectstatic --noinput
+
+            echo "Application Health"
+
+            curl -I http://localhost:8000 || true
+
+            curl -I http://localhost:3000 || true
+
+            echo "Docker Images"
+
+            docker images
+
+            echo "Docker Containers"
+
+            docker ps
+
+            echo "Cleaning Docker"
+
+            docker system prune -f
+
+            echo "==================================="
+            echo "✅ Deployment Successful"
+            echo "==================================="
